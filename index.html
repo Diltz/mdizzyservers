@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Mute Discord Servers</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+        <script>
+            function mute(){
+                var auth = document.getElementById("auth_token").value
+                var state_obj = document.getElementById("state")
+                state_obj.style.color = ""
+                state_obj.innerText = "Checking authentication token.."
+
+                var xhr = new XMLHttpRequest()
+                xhr.open("GET","https://discord.com/api/v8/users/@me/guilds",false)
+                xhr.setRequestHeader("Content-Type","application/json")
+                xhr.setRequestHeader("Authorization",auth)
+                xhr.send()
+
+                if (xhr.status != 200) {
+                    state_obj.style.color = "red"
+                    state_obj.innerText = "TOKEN VALIDATION FAILURE\n" + xhr.status + " - " + xhr.statusText
+                }else{
+                    state_obj.style.color = "green"
+                    state_obj.innerText = "TOKEN VALIDATION SUCCESS"
+                }
+
+                setTimeout(function(){
+                    if (xhr.status != 200) return;
+
+                    var array_from_json = JSON.parse(xhr.responseText)
+
+                    state_obj.style.color = ""
+                    state_obj.innerText = "Guilds on account: " + array_from_json.length
+
+                    setTimeout(function(){
+                        for (var [key,value] of Object.entries(array_from_json)){
+                            var xhr_apply = new XMLHttpRequest()
+                            xhr_apply.open("PATCH",`https://discord.com/api/v8/users/@me/guilds/${value.id}/settings`,false)
+                            xhr_apply.setRequestHeader("Content-Type","application/json")
+                            xhr_apply.setRequestHeader("Authorization",auth)
+                            xhr_apply.send(JSON.stringify({
+                                "muted":true,
+                                "mute_config":{"selected_time_window":-1,"end_time":null}
+                            }))
+
+                            if (xhr.status != 200){
+                                state_obj.style.color = "red"
+                                state_obj.innerText = `Failed muting ${value.id}\n${xhr.status} - ${xhr.statusText}`
+                                alert("Stopped")
+                                return
+                            }else{
+                                state_obj.style.color = "green"
+                                state_obj.innerText = `Muted ${value.id}`
+                            }
+                        }
+
+                        state_obj.style.color = "green"
+                        state_obj.innerText = `All servers should be muted!`
+                    },5000)
+                },2000)
+            }
+        </script>
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <h1>
+            <a>
+                Introduction
+            </a>
+        </h1>
+
+        <h3>
+            What is this?
+        </h3>
+
+        Page made for blocking all your discord servers on account without manual mute
+
+        <h3>
+            What do I need to mute servers?
+        </h3>
+
+        Fill the "authorization" field
+
+        <h5>
+            <input placeholder="authorization here" id="auth_token" maxlength="8192">
+            <button onclick="mute()">Mute</button>
+        </h5>
+
+        <hr id="state">
+    </body>
+</html>
